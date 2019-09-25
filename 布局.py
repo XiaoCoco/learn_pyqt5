@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 
 from PyQt5.QtCore import Qt, QPoint
@@ -531,8 +532,25 @@ class Example(QWidget):
         # 右键动作
         action = self.strategy_tree.popMenu.exec_(self.strategy_tree.mapToGlobal(point))
         if action == add_strategy:
-            value, ok = QInputDialog.getText(self, '新建文件', '策略名称',  QLineEdit.Normal)
-            print(value, ok)
+            item = self.strategy_tree.currentItem()
+            if item and not item.parent():
+                value = ''
+                while True:
+                    value, ok = QInputDialog.getText(self, '新建文件', '策略名称',  QLineEdit.Normal)
+                    path = os.path.join(os.path.join(strategy_path, item.text(0)), value+'.py')
+                    if os.path.exists(path) and ok:
+                        QMessageBox.warning(self, '提示', '策略名在选择的分组%s已经存在！！！' % value, QMessageBox.Yes)
+                    elif not ok:
+                        break
+                    else:
+                        with open(path, 'w', encoding='utf-8') as w:
+                            pass
+                        break
+
+            else:
+                QMessageBox.warning(self, '提示', '请选择分组！！！', QMessageBox.Yes)
+            self.refresh_strategy()
+
         elif action == add_group:
             value = ''
             while True:
@@ -540,29 +558,58 @@ class Example(QWidget):
                 path = os.path.join(strategy_path, value)
                 if os.path.exists(path) and ok:
                     QMessageBox.warning(self, '提示', '分组%s已经存在！！！' % value, QMessageBox.Yes)
-                else:
+                elif not ok:
                     break
-            os.mkdir(path)
-            self.strategy_tree.clear()
-            for d in os.listdir(strategy_path):
-                root = QTreeWidgetItem(self.strategy_tree)
-                root.setText(0, d)
-                for file in os.listdir(os.path.join(strategy_path, d)):
-                    child = QTreeWidgetItem(root)
-                    child.setText(0, file)
+                else:
+                    os.mkdir(path)
+                    break
+
+            self.refresh_strategy()
 
         elif action == refresh:
-            self.strategy_tree.clear()
-            for d in os.listdir(strategy_path):
-                root = QTreeWidgetItem(self.strategy_tree)
-                root.setText(0, d)
-                for file in os.listdir(os.path.join(strategy_path, d)):
-                    child = QTreeWidgetItem(root)
-                    child.setText(0, file)
+            self.refresh_strategy()
         elif action == rename:
-            pass
+            item = self.strategy_tree.currentItem()
+            if item.parent():  # 修改策略名
+                path = os.path.join(os.path.join(strategy_path, item.parent().text(0)), item.text(0))
+                value = ''
+                while True:
+                    value, ok = QInputDialog.getText(self, '修改文%s策略名' % item.text(0), '策略名称', QLineEdit.Normal, value)
+                    new_path = os.path.join(os.path.join(strategy_path, item.parent().text(0)), value)
+                    if os.path.exists(path) and ok:
+                        QMessageBox.warning(self, '提示', '策略名在此分组中%s已经存在！！！' % value, QMessageBox.Yes)
+                    elif not ok:
+                        break
+                    else:
+                        os.rename(path, new_path)
+                        break
+            else:
+                path = os.path.join(strategy_path, item.text(0))
+                value = ''
+                while True:
+                    value, ok = QInputDialog.getText(self, '修改%s文件夹' % item.text(0), '分组名称', QLineEdit.Normal, value)
+                    new_path = os.path.join(strategy_path, value)
+                    if os.path.exists(path) and ok:
+                        QMessageBox.warning(self, '提示', '分组%s已经存在！！！' % value, QMessageBox.Yes)
+                    elif not ok:
+                        break
+                    else:
+                        os.rename(path, new_path)
+                        break
+            self.refresh_strategy()
         elif action == delete:
-            pass
+            item = self.strategy_tree.currentItem()
+            if item and not item.parent():
+                reply = QMessageBox.question(self, '提示',  '确定删除分组及目录下的所有文件吗？', QMessageBox.Yes | QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    shutil.rmtree(os.path.join(strategy_path, item.text(0)))
+            elif item and item.parent():
+                reply = QMessageBox.question(self, '提示', '确定删除文件%s吗？' % item.text(0), QMessageBox.Yes | QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    os.remove(os.path.join(os.path.join(strategy_path, item.parent().text(0)), item.text(0)))
+            else:
+                pass
+            self.refresh_strategy()
         else:
             pass
 
@@ -640,6 +687,16 @@ class Example(QWidget):
         text = item_text.lstrip("\n") if item_text else ''
         self.func_content.setText(text.replace(' ', ''))
         self.func_doc.setTabText(0, item.text(0))
+
+    def refresh_strategy(self):
+        # 刷新策略树
+        self.strategy_tree.clear()
+        for d in os.listdir(strategy_path):
+            root = QTreeWidgetItem(self.strategy_tree)
+            root.setText(0, d)
+            for file in os.listdir(os.path.join(strategy_path, d)):
+                child = QTreeWidgetItem(root)
+                child.setText(0, file)
 
 
 if __name__ == "__main__":
