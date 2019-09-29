@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtWidgets import *
 
 from base_api import BaseApi
-
+from strategyPolicy import StrategyPolicy
 
 strategy_path = r'C:\Users\xiaok\Desktop\purepython\strategy'
 
@@ -374,82 +374,6 @@ _all_func_ = {
 }
 
 
-class Demo(QWidget):
-
-    def __init__(self, parent=None):
-        super(Demo, self).__init__(parent)
-        self.mainLayout = QVBoxLayout()
-        self.topLayout = QGridLayout()
-        self.bottomLayout = QGridLayout()
-        self.init_ui()
-
-    def init_ui(self):
-
-        contentEdit = QTextEdit()
-
-        # 策略树
-        strategy_vbox = QGroupBox('Vbox layout')
-        strategy_layout = QHBoxLayout()
-        strategy_tree = QTreeWidget()
-        strategy_tree.setColumnCount(1)
-        strategy_tree.setHeaderLabels(['策略'])
-
-        for d in os.listdir(strategy_path):
-            root = QTreeWidgetItem(strategy_tree)
-            root.setText(0, d)
-            for file in os.listdir(os.path.join(strategy_path, d)):
-                child = QTreeWidgetItem(root)
-                child.setText(0, file)
-        strategy_layout.addWidget(strategy_tree)
-        strategy_vbox.setLayout(strategy_layout)
-
-        self.topLayout.addWidget(strategy_vbox, 1, 0)
-
-        # 内容
-        # content_vbox = QGroupBox('Vbox layout')
-        # content_layout = QVBoxLayout()
-        # content_layout.addWidget(contentEdit)
-        # content_vbox.setLayout(content_layout)
-        # self.topLayout.addWidget(content_vbox, 1, 0, 6, 6)
-
-        # 函数列表
-        func_vbox = QGroupBox('Vbox layout')
-        func_layout = QVBoxLayout()
-        func_tree = QTreeWidget()
-        func_tree.setColumnCount(2)
-        func_tree.setHeaderLabels(['函数列表', ''])
-        for k, v in _all_func_.items():
-            root = QTreeWidgetItem(func_tree)
-            root.setText(0, k)
-            root.setText(1, '')
-            for i in v:
-                child = QTreeWidgetItem(root)
-                child.setText(0, i[0])
-                child.setText(1, i[1])
-        func_layout.addWidget(func_tree)
-        func_vbox.setLayout(func_layout)
-        self.topLayout.addWidget(func_vbox, 1, 1)
-
-        self.mainLayout.addLayout(self.topLayout)
-        self.setLayout(self.mainLayout)
-        self.setGeometry(200, 200, 1200, 800)
-
-        # grid = QGridLayout()
-        # grid.setSpacing(5)
-        # grid.addWidget(strategy_tree, 1, 0)
-        # grid.addWidget(contentEdit, 1, 1)
-        # grid.addWidget(func_tree, 2, 0)
-        # self.setLayout(grid)
-        # self.setGeometry(200, 200, 1200, 800)
-        #
-        # # 居中显示
-        # qr = self.frameGeometry()
-        # qr.moveCenter(QDesktopWidget().availableGeometry().center())
-        # self.move(qr.topLeft())
-        #
-        # self.setWindowTitle("量化")
-
-
 class Example(QWidget):
     def __init__(self):
         super().__init__()
@@ -489,6 +413,9 @@ class Example(QWidget):
         self.setGeometry(200, 200, 1200, 800)
         self.setWindowTitle('极星量化')
         self.show()
+
+        # 策略信息
+        self.strategy_path = None
 
     def create_stragety_vbox(self):
         # 策略树
@@ -625,6 +552,7 @@ class Example(QWidget):
         self.content_layout.addWidget(self.save_btn, 0, 2, 1, 1)
         self.content_layout.addWidget(self.contentEdit, 2, 0, 1, 3)
         self.content_vbox.setLayout(self.content_layout)
+        self.run_btn.clicked.connect(self.create_strategy_policy_win)
 
     def create_func_vbox(self):
         # 函数列表
@@ -680,6 +608,7 @@ class Example(QWidget):
             with open(path, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.contentEdit.setText(content)
+            self.strategy_path = path
 
     def func_tree_clicked(self):
         item = self.func_tree.currentItem()
@@ -697,6 +626,17 @@ class Example(QWidget):
             for file in os.listdir(os.path.join(strategy_path, d)):
                 child = QTreeWidgetItem(root)
                 child.setText(0, file)
+
+    def create_strategy_policy_win(self):
+        if self.strategy_path:
+            self.strategy_policy_win = StrategyPolicy()
+            self.strategy_policy_win.show()
+        else:
+            QMessageBox.warning(self, '提示', '请选择策略！！！', QMessageBox.Yes)
+
+
+class StrategyManager(object):
+    pass
 
 
 if __name__ == "__main__":
